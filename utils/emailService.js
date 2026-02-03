@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 
 exports.sendVerificationEmail = async (email, token) => {
     // Determine frontend URL from env or default
-    const frontendUrl = process.env.FRONTEND_URL || 'https://college-timetable-management-system-frontend-lvct59ryy.vercel.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://college-timetable-management-system-three.vercel.app';
     // Ensure no double slashes if frontendUrl ends with /
     const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
     const url = `${baseUrl}/verify-email/${token}`;
@@ -43,7 +43,7 @@ exports.sendVerificationEmail = async (email, token) => {
 };
 
 exports.sendPasswordResetEmail = async (email, token) => {
-    const frontendUrl = process.env.FRONTEND_URL || 'https://college-timetable-management-system-frontend-lvct59ryy.vercel.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://college-timetable-management-system-three.vercel.app';
     const url = `${frontendUrl}/reset-password/${token}`;
 
     try {
@@ -66,7 +66,7 @@ exports.sendPasswordResetEmail = async (email, token) => {
     }
 };
 exports.sendInvitationEmail = async (email, token, role) => {
-    const frontendUrl = process.env.FRONTEND_URL || 'https://college-timetable-management-system-frontend-lvct59ryy.vercel.app';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://college-timetable-management-system-three.vercel.app';
     const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
     const url = `${baseUrl}/signup?invitation_token=${token}`;
 
