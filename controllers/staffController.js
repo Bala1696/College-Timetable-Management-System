@@ -1,5 +1,6 @@
 const SupportingStaff = require('../models/SupportingStaff');
 const User = require('../models/User');
+const Timetable = require('../models/Timetable');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { sendInvitationEmail } = require('../utils/emailService');
@@ -9,11 +10,16 @@ const path = require('path');
 exports.createStaff = async (req, res) => {
     try {
         const { name, qualification, designation, experience, email, mobileNo } = req.body;
-        let profilePhoto = req.file ? req.file.filename : null;
+        let profilePhoto = req.file ? req.file.path : null;
 
         let user = await User.findOne({ where: { email } });
         if (user) {
             return res.status(400).json({ message: 'User with this email already exists' });
+        }
+
+        let existingStaff = await SupportingStaff.findOne({ where: { email } });
+        if (existingStaff) {
+            return res.status(400).json({ message: 'Staff with this email already exists' });
         }
 
         // Generate Invitation Token
@@ -47,7 +53,11 @@ exports.createStaff = async (req, res) => {
             staff
         });
     } catch (error) {
-        console.error(error);
+        console.error("Create Staff Error:", error);
+        if (error.errors) {
+            console.error("Validation Errors:", error.errors.map(e => e.message));
+            return res.status(400).json({ message: 'Validation error', error: error.errors.map(e => e.message) });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -82,14 +92,7 @@ exports.updateStaff = async (req, res) => {
 
         // Handle Image Update
         if (req.file) {
-            // Delete old image if exists
-            if (staff.profilePhoto) {
-                const oldPath = path.join(__dirname, '../uploads', staff.profilePhoto);
-                if (fs.existsSync(oldPath)) {
-                    fs.unlinkSync(oldPath);
-                }
-            }
-            updateData.profilePhoto = req.file.filename;
+            updateData.profilePhoto = req.file.path;
         }
 
         await staff.update(updateData);
@@ -106,20 +109,34 @@ exports.deleteStaff = async (req, res) => {
         const staff = await SupportingStaff.findByPk(id);
         if (!staff) return res.status(404).json({ message: 'Staff not found' });
 
-        // Delete Image
-        if (staff.profilePhoto) {
-            const oldPath = path.join(__dirname, '../uploads', staff.profilePhoto);
-            if (fs.existsSync(oldPath)) {
-                fs.unlinkSync(oldPath);
-            }
-        }
+        // Delete Image from Cloudinary (optional, skipping for now)
 
         const user = await User.findOne({ where: { email: staff.email } });
         if (user) await user.destroy();
 
+        // Delete related Timetable entries
+        const timetables = await Timetable.findAll();
+        for (const tt of timetables) {
+            try {
+                // Handle case where faculty_name is a JSON string array
+                const staffNames = JSON.parse(tt.faculty_name);
+                if (Array.isArray(staffNames) && staffNames.includes(staff.name)) {
+                    await tt.destroy();
+                } else if (tt.faculty_name === staff.name) {
+                    await tt.destroy();
+                }
+            } catch (e) {
+                // Fallback: If it's just a raw string, not JSON
+                if (tt.faculty_name === staff.name || String(tt.faculty_name).includes(staff.name)) {
+                    await tt.destroy();
+                }
+            }
+        }
+
         await staff.destroy();
-        res.json({ message: 'Staff deleted successfully' });
+        res.json({ message: 'Staff and related records deleted successfully' });
     } catch (error) {
+        console.error("Delete Staff Error:", error);
         res.status(500).json({ message: 'Server error' });
     }
 };

@@ -37,7 +37,7 @@ const timetableSchemas = Joi.object({
     end_period: Joi.number().integer().min(Joi.ref('period_number')).max(8).allow(null),
     course_code: Joi.string().required(),
     subject_name: Joi.string().required(),
-    faculty_name: Joi.string().required(),
+    faculty_name: Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())).required(),
     venue: Joi.string().required(),
     type: Joi.string().valid('Theory', 'Lab').required(),
     batch: Joi.string().valid('Odd', 'Even', 'Both').default('Both'),
