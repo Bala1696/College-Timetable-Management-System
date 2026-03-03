@@ -29,7 +29,7 @@
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "mysql2": "^3.16.1",
-    "nodemailer": "^7.0.12",
+    "nodemailer": "^7.0.13",
     "nodemon": "^3.1.11",
     "pdfkit": "^0.17.2",
     "sequelize": "^6.37.7"
