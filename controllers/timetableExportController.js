@@ -136,7 +136,19 @@ exports.exportToPDF = async (req, res) => {
                     const p = 5;
                     doc.font('Helvetica-Bold').fontSize(9).text(entry.course_code, x + p, currentY + 15, { width: cellWidth - p * 2, align: 'center' });
                     doc.font('Helvetica').fontSize(8).text(`(${entry.subject_name})`, x + p, currentY + 30, { width: cellWidth - p * 2, align: 'center' });
-                    doc.fontSize(7).text(entry.venue, x + p, currentY + 50, { width: cellWidth - p * 2, align: 'center' });
+
+                    // Handle Faculty Name (JSON or String)
+                    let facultyNames = entry.faculty_name;
+                    try {
+                        const parsed = JSON.parse(entry.faculty_name);
+                        if (Array.isArray(parsed)) facultyNames = parsed.join(', ');
+                    } catch (e) { /* use as is */ }
+
+                    doc.fontSize(7).text(entry.venue, x + p, currentY + 45, { width: cellWidth - p * 2, align: 'center' });
+                    // Optionally show faculty name in grid if space permits, but usually grid is tight.
+                    // If you want to show it, uncomment below:
+                    // doc.fontSize(6).text(facultyNames, x + p, currentY + 55, { width: cellWidth - p * 2, align: 'center' });
+
                     for (let s = 0; s < span; s++) renderedPeriods.add(i + s);
                 } else {
                     doc.rect(x, currentY, periodWidth, rowHeight).stroke();
@@ -192,7 +204,14 @@ exports.exportToPDF = async (req, res) => {
             }
             doc.rect(startX, legendY, totalLegendWidth, 25).stroke();
             let dlx = startX;
-            [c.course_code, c.subject_name, c.venue, c.faculty_name].forEach((txt, i) => {
+
+            let facultyNames = c.faculty_name;
+            try {
+                const parsed = JSON.parse(c.faculty_name);
+                if (Array.isArray(parsed)) facultyNames = parsed.join(', ');
+            } catch (e) { /* use as is */ }
+
+            [c.course_code, c.subject_name, c.venue, facultyNames].forEach((txt, i) => {
                 doc.text(txt || '-', dlx + 5, legendY + 8, { width: lCols[i] - 10, align: 'center' });
                 dlx += lCols[i];
                 if (i < 3) doc.moveTo(dlx, legendY).lineTo(dlx, legendY + 25).stroke();
@@ -305,14 +324,22 @@ exports.exportToWord = async (req, res) => {
                     new TableCell({ children: [new Paragraph({ text: "Name of the Faculty", style: "strong" })], shading: { fill: "f0f0f0" } }),
                 ]
             }),
-            ...uniqueCourses.map(c => new TableRow({
-                children: [
-                    new TableCell({ children: [new Paragraph({ text: c.course_code || "-" })] }),
-                    new TableCell({ children: [new Paragraph({ text: c.subject_name || "-" })] }),
-                    new TableCell({ children: [new Paragraph({ text: c.venue || "-" })] }),
-                    new TableCell({ children: [new Paragraph({ text: c.faculty_name || "-" })] }),
-                ]
-            }))
+            ...uniqueCourses.map(c => {
+                let facultyNames = c.faculty_name;
+                try {
+                    const parsed = JSON.parse(c.faculty_name);
+                    if (Array.isArray(parsed)) facultyNames = parsed.join(', ');
+                } catch (e) { /* use as is */ }
+
+                return new TableRow({
+                    children: [
+                        new TableCell({ children: [new Paragraph({ text: c.course_code || "-" })] }),
+                        new TableCell({ children: [new Paragraph({ text: c.subject_name || "-" })] }),
+                        new TableCell({ children: [new Paragraph({ text: c.venue || "-" })] }),
+                        new TableCell({ children: [new Paragraph({ text: facultyNames || "-" })] }),
+                    ]
+                });
+            })
         ];
 
         const doc = new Document({

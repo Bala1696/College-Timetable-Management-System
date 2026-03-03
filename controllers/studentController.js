@@ -43,8 +43,16 @@ exports.createStudent = async (req, res) => {
                 .json({ message: "Student with this roll number already exists in this year" });
         }
 
+        // Auto-generate Serial Number based on Year
+        const maxSerialStudent = await Student.findOne({
+            where: { year },
+            order: [['serialNo', 'DESC']],
+        });
+
+        const nextSerialNo = maxSerialStudent && maxSerialStudent.serialNo ? maxSerialStudent.serialNo + 1 : 1;
+
         const student = await Student.create({
-            serialNo,
+            serialNo: nextSerialNo,
             rollNumber,
             studentName,
             remarks,
@@ -72,6 +80,7 @@ exports.getStudents = async (req, res) => {
         if (year) where.year = year;
 
         const students = await Student.findAll({
+            where,
             where,
             order: [["serialNo", "ASC"]],
         });
@@ -219,9 +228,9 @@ exports.exportPDF = async (req, res) => {
         y += rowHeight;
 
         doc.font('Helvetica').fontSize(11);
-        students.forEach((s, i) => {
+        students.forEach((s) => {
             if (y > doc.page.height - 60) { doc.addPage(); y = doc.page.margins.top; }
-            doc.text(i + 1, startX, y, { width: col.sno });
+            doc.text(s.serialNo || '-', startX, y, { width: col.sno });
             doc.text(s.rollNumber, startX + col.sno, y, { width: col.roll });
             doc.text(s.studentName, startX + col.sno + col.roll, y, { width: col.name });
             doc.text(s.remarks || '-', startX + col.sno + col.roll + col.name, y, { width: col.remarks });

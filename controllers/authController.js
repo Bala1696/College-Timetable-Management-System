@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { Op } = require('sequelize');
 const User = require('../models/User');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
+const Faculty = require('../models/Faculty');
+const SupportingStaff = require('../models/SupportingStaff');
 
 exports.register = async (req, res) => {
     try {
@@ -79,21 +81,38 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
+
         const token = jwt.sign(
             { id: user.id, role: user.role },
             process.env.JWT_SECRET,
             { expiresIn: '1d' }
         );
 
+        // Fetch profile photo
+        let profilePhoto = null;
+        if (user.role === 'faculty' || user.role === 'admin') {
+            const faculty = await Faculty.findOne({ where: { email } });
+            if (faculty) profilePhoto = faculty.profilePhoto;
+        } else if (user.role === 'supporting_staff') {
+            const staff = await SupportingStaff.findOne({ where: { email } });
+            if (staff) profilePhoto = staff.profilePhoto;
+        }
+
+        const userData = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            department: user.department,
+            profilePhoto: profilePhoto
+        };
+
+        // Set user in session
+        req.session.user = userData;
+
         res.json({
             token,
-            user: {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                role: user.role,
-                department: user.department,
-            },
+            user: userData,
         });
     } catch (error) {
         console.error(error);
@@ -176,9 +195,13 @@ exports.changePassword = async (req, res) => {
 };
 exports.logout = async (req, res) => {
     try {
-        // Since we use JWT, we mostly clear it on frontend.
-        // Backend logout can be used for logging or token blacklisting (if implemented).
-        res.json({ message: 'Logout successful' });
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ message: 'Could not log out' });
+            }
+            res.clearCookie('connect.sid');
+            res.json({ message: 'Logout successful' });
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

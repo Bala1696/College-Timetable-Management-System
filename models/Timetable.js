@@ -46,7 +46,7 @@ const Timetable = sequelize.define('Timetable', {
         allowNull: false,
     },
     faculty_name: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT, // Changed to TEXT to store JSON string of array
         allowNull: false,
     },
     venue: {
