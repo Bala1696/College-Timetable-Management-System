@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "nodemon app.js"
   },
   "keywords": [],
   "author": "",
@@ -28,12 +28,10 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
-    "mysql2": "^3.18.2",
+    "mysql2": "^3.16.1",
     "nodemailer": "^7.0.12",
+    "nodemon": "^3.1.11",
     "pdfkit": "^0.17.2",
     "sequelize": "^6.37.7"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
   }
 }
